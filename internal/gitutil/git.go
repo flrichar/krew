@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/pkg/errors"
 )
 
@@ -65,50 +66,50 @@ func IsGitCloned(gitPath string) (bool, error) {
 // untracked files and directories.
 func updateAndCleanUntracked(destinationPath string) error {
 
-		// Open the repository.
-		r, err := git.PlainOpen(destinationPath)
+	// Open the repository.
+	r, err := git.PlainOpen(destinationPath)
+	CheckIfError(err)
+
+	// Get the worktree.
+	w, err := r.Worktree()
+	CheckIfError(err)
+
+	// Fetch the upstream master branch.
+	Info("git fetch -v")
+
+	err = r.Fetch(&git.FetchOptions{
+		RemoteName: "origin",
+	})
+	if err == git.NoErrAlreadyUpToDate {
+		fmt.Println(err)
+	} else if err != nil {
 		CheckIfError(err)
-	
-		// Get the worktree.
-		w, err := r.Worktree()
-		CheckIfError(err)
-	
-		// Fetch the upstream master branch.
-		Info("git fetch -v")
-	
-		err = r.Fetch(&git.FetchOptions{
-			RemoteName: "origin",
-		})
-		if err == git.NoErrAlreadyUpToDate {
-			fmt.Println(err)
-		} else if err != nil {
-			CheckIfError(err)
-		}
-	
-		// Reset the local master branch to the upstream master branch.
-		Info("git reset --hard @{upstream}")
-	
-		// Get the reference for remote origin/master
-		ref, err := r.Reference(plumbing.NewRemoteReferenceName("origin", "master"), true)
-		CheckIfError(err)
-	
-		// Reset the worktree to origin/master
-		err = w.Reset(&git.ResetOptions{
-			Commit: ref.Hash(),
-			Mode:   git.HardReset,
-		})
-		CheckIfError(err)
-	
-		// Clean all untracked files from the worktree.
-		Info("git clean -xfd")
-	
-		err = w.Clean(&git.CleanOptions{
-			Dir: true,
-		})
-		CheckIfError(err)
-	
-		// Print a message indicating that the reset and clean was successful.
-		fmt.Println("Fetch, Reset, and clean to upstream origin/master branch successful.")``
+	}
+
+	// Reset the local master branch to the upstream master branch.
+	Info("git reset --hard @{upstream}")
+
+	// Get the reference for remote origin/master
+	ref, err := r.Reference(plumbing.NewRemoteReferenceName("origin", "master"), true)
+	CheckIfError(err)
+
+	// Reset the worktree to origin/master
+	err = w.Reset(&git.ResetOptions{
+		Commit: ref.Hash(),
+		Mode:   git.HardReset,
+	})
+	CheckIfError(err)
+
+	// Clean all untracked files from the worktree.
+	Info("git clean -xfd")
+
+	err = w.Clean(&git.CleanOptions{
+		Dir: true,
+	})
+	CheckIfError(err)
+
+	// Print a message indicating that the reset and clean was successful.
+	fmt.Println("Fetch, Reset, and clean to upstream origin/master branch successful.")
 
 	return errors.Wrapf(err, "clean index at %q failed", destinationPath)
 }
