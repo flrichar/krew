@@ -89,9 +89,24 @@ func EnsureUpdated(uri, destinationPath string) error {
 
 // GetRemoteURL returns the url of the remote origin
 func GetRemoteURL(dir string) (string, error) {
-	////// config goes here
-	return Exec(dir, "config", "--get", "remote.origin.url")
-	//////
+
+	// We instantiate a new repository targeting the given path (the .git folder)
+	r, err := git.PlainOpen(dir)
+	CheckIfError(err)
+
+	// Get the .git/config information
+	Info("git config --get remote.origin.url")
+
+	// Get the remote origin.
+	origin, err := r.Remote("origin")
+	CheckIfError(err)
+
+	// Get the remote origin URL.
+	originURL := origin.Config().URLs[0]
+
+	// Print the remote origin URL.
+	return fmt.Println(originURL)
+
 }
 
 ////// replace Exec() with Info() & CheckIfError(), keeping krew conventions
@@ -101,7 +116,7 @@ func CheckIfError(err error) {
 	if err == nil {
 		return
 	}
-	errors.Wrapf("error: %q")
+	errors.Wrapf(err, "error: %q")
 }
 
 // Info should be used to describe the example commands that are about to run.
