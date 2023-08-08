@@ -105,7 +105,7 @@ func GetRemoteURL(dir string) (string, error) {
 	originURL := origin.Config().URLs[0]
 
 	// Print the remote origin URL.
-	return fmt.Println(originURL)
+	return originURL, err
 
 }
 
