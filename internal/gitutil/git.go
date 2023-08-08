@@ -30,7 +30,7 @@ func EnsureCloned(uri, destinationPath string) error {
 		return err
 	} else if !ok {
 		// Clone the given repository to the given directory
-		Info("git clone %s %s --recursive", url, directory)
+		Info("git clone %s %s --recursive", uri, destinationPath)
 
 		r, err := git.PlainClone(destinationPath, false, &git.CloneOptions{
 			URL:               uri,
