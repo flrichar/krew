@@ -65,18 +65,52 @@ func IsGitCloned(gitPath string) (bool, error) {
 // untracked files and directories.
 func updateAndCleanUntracked(destinationPath string) error {
 
-	////// fetch-reset-clean goes here
-	if _, err := Exec(destinationPath, "fetch", "-v"); err != nil {
-		return errors.Wrapf(err, "fetch index at %q failed", destinationPath)
-	}
+		// Open the repository.
+		r, err := git.PlainOpen(destinationPath)
+		CheckIfError(err)
+	
+		// Get the worktree.
+		w, err := r.Worktree()
+		CheckIfError(err)
+	
+		// Fetch the upstream master branch.
+		Info("git fetch -v")
+	
+		err = r.Fetch(&git.FetchOptions{
+			RemoteName: "origin",
+		})
+		if err == git.NoErrAlreadyUpToDate {
+			fmt.Println(err)
+		} else if err != nil {
+			CheckIfError(err)
+		}
+	
+		// Reset the local master branch to the upstream master branch.
+		Info("git reset --hard @{upstream}")
+	
+		// Get the reference for remote origin/master
+		ref, err := r.Reference(plumbing.NewRemoteReferenceName("origin", "master"), true)
+		CheckIfError(err)
+	
+		// Reset the worktree to origin/master
+		err = w.Reset(&git.ResetOptions{
+			Commit: ref.Hash(),
+			Mode:   git.HardReset,
+		})
+		CheckIfError(err)
+	
+		// Clean all untracked files from the worktree.
+		Info("git clean -xfd")
+	
+		err = w.Clean(&git.CleanOptions{
+			Dir: true,
+		})
+		CheckIfError(err)
+	
+		// Print a message indicating that the reset and clean was successful.
+		fmt.Println("Fetch, Reset, and clean to upstream origin/master branch successful.")``
 
-	if _, err := Exec(destinationPath, "reset", "--hard", "@{upstream}"); err != nil {
-		return errors.Wrapf(err, "reset index at %q failed", destinationPath)
-	}
-
-	_, err := Exec(destinationPath, "clean", "-xfd")
 	return errors.Wrapf(err, "clean index at %q failed", destinationPath)
-	/////
 }
 
 // EnsureUpdated will ensure the destination path exists and is up to date.
